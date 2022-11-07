@@ -1,0 +1,217 @@
+import cv2
+import numpy as np
+import os, subprocess
+import matplotlib.pyplot as plt
+from tkinter import*
+from PIL import Image, ImageTk
+
+# Get all images
+path = os.getcwd()+'\images\jpg'
+myList = os.listdir(path)
+list2 = []
+for _, imgs in enumerate(myList):
+    img = imgs.split(".")
+    if img[1] == "jpg":
+        list2.append(imgs)
+        print(imgs)
+# 
+
+# Windows
+# win = Tk("Image"+list2[0])
+# win.geometry("1920x1080")
+# label_1 = Label(win,text="This is a label")
+# label_1.place(x=10,y=10)
+
+# win.mainloop()
+
+
+# def to_pil(img,label,x,y,w,h):
+#     img = cv2.resize(img,(w,h))
+#     img = cv2.flip(img,1)
+#     image = Image.fromarray(img)
+#     pic = ImageTk.PhotoImage(image)
+#     label.configure(image=pic)
+#     label.image = pic
+#     label.place(x=x, y=y)
+
+# directory = os.getcwd()+'\images\jpg'+'\IMG_7595.jpg'
+directory = path+'\\'+list2[0]
+posList = []
+img = cv2.imread(directory)
+resized_image = img
+
+
+
+def resizeImage(image, scale):
+    scale_percent = scale # percent of original size
+    width = int(image.shape[1] * scale_percent / 100)
+    height = int(image.shape[0] * scale_percent / 100)
+    dim = (width, height)
+    
+    # resize image
+    return cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
+
+
+def computeHomography(src_img, dst_img):
+    buf = 0
+    pts_src = np.array(posList)
+    pts_dst = np.array([[buf, buf],[dst_img.shape[1]-buf, buf],[dst_img.shape[1]-buf, dst_img.shape[0]-buf],[buf, dst_img.shape[0]-buf]])
+    print(pts_src)
+    # Calculate Homography
+    h, status = cv2.findHomography(pts_src, pts_dst)
+    # Warp source image to destination based on homography
+    return cv2.warpPerspective(src_img, h, (dst_img.shape[1],dst_img.shape[0]))
+
+def click_event(event, x, y, flags, params):
+    global posList, resized_image
+    # checking for left mouse clicks
+    if event == cv2.EVENT_LBUTTONDOWN:
+ 
+        # displaying the coordinates
+        # on the Shell
+        # resized_image = resizeImage(img, 30)
+        if (len(posList)<4):
+            print(x, ' ', y)
+            cv2.circle(resized_image,(x,y),20,(255,0,0),-1)
+            posList.append([x,y])
+                # font = cv2.FONT_HERSHEY_SIMPLEX
+                # cv2.putText(img, str(x) + ',' +
+                #             str(y), (x,y), font,
+                #             1, (255, 0, 0), 2)
+            cv2.imshow('image', resized_image)
+        else:
+            print("You've hit 4 points")
+            print("Use right mouse if you want to remove")
+ 
+    # checking for right mouse clicks    
+    if event==cv2.EVENT_RBUTTONDOWN:
+ 
+        # displaying the coordinates
+        # on the Shell
+        print(x, ' ', y)
+        posList = []
+        resized_image = resizeImage(img, 30)
+        print("Points cleared")
+        cv2.imshow('image', resized_image)
+
+
+def generate_homography(*args):
+    print("Generating Homographys", args)
+
+def out_calculate_corners(*args):
+    print("Detecting Corners")
+
+
+# driver function
+if __name__=="__main__":
+    # resize image
+    resized_image = resizeImage(img, 30)
+    # img = resized
+    quitState = False
+    # cv2.createButton("button6",generate_homography, None, cv2.QT_PUSH_BUTTON,1)
+    cv2.namedWindow('image')
+    cv2.createTrackbar('R','image',0,255,generate_homography)    
+    # cv2.createButton("homo", generate_homography, None, cv2.QT_PUSH_BUTTON, 1)
+    while(not quitState):
+        # displaying the image
+        cv2.imshow('image', resized_image)
+        
+        # setting mouse handler for the image
+        # and calling the click_event() function
+        cv2.setMouseCallback('image', click_event)
+        alpha = 1.75 # Contrast control (1.0-3.0)
+        beta = 0 # Brightness control (0-100)
+        # adjusted = cv2.convertScaleAbs(resized_image, alpha=alpha, beta=beta)
+        adjusted = cv2.cvtColor(resized_image, cv2.COLOR_BGR2HSV)
+        adjusted = cv2.convertScaleAbs(adjusted, alpha=alpha, beta=beta)
+        gray = cv2.cvtColor(adjusted,cv2.COLOR_BGR2GRAY)
+        
+        # gray = np.float32(gray)
+        N_best_Corners = 4
+        qualityLevel = 0.05
+        min_Distance = 375 # x1, y1 x2, y2 -- sqrt(x2-x1^2)
+
+        corners = cv2.goodFeaturesToTrack(gray, N_best_Corners, qualityLevel, min_Distance) #corner detector
+        corners = np.int0(corners)
+        for corner in corners:
+            x, y = corner.ravel() # flattens an array [[[][]]] -> []
+            cv2.circle(resized_image, (x,y), 10, (255, 255, 0), -1)
+        #result is dilated for marking the corners, not important
+        # dst = cv2.dilate(dst,None)
+        # Threshold for an optimal value, it may vary depending on the image.
+        # resized_image[dst>0.01*dst.max()]=[0,0,255]
+        cv2.imshow('adjust',adjusted)
+        cv2.imshow('resized',resized_image)
+        cv2.imshow('dst',gray)
+
+        k = cv2.waitKey(0) # wait for a key to be pressed to exit
+        if k == 13:
+            print("comput homography")
+            if(len(posList) == 4):
+                canvas_size = np.zeros((resized_image.shape[0], resized_image.shape[1]))
+                resized_image = resizeImage(img, 30)
+                hm_image = computeHomography(resized_image, canvas_size)
+                cv2.imshow('computeHomography', hm_image)   
+            else: 
+                print("Not enough points")     
+        elif k == 27:
+            quitState = True
+            cv2.destroyAllWindows()
+        else:
+            print("Thats not a command")
+            print(k)
+
+    cv2.destroyAllWindows()
+    # close the window
+    # cv2.destroyAllWindows()
+# if __name__ == '__main__' :
+ 
+#     # Read source image.
+#     im_src = cv2.imread(directory)
+#     # Four corners of the book in source image
+#     pts_src = np.array([[141, 131], [480, 159], [493, 630],[64, 601]])
+ 
+#     directory = os.getcwd()+'\images\jpg'+'\IMG_7596.jpg'
+#     # Read destination image.
+#     im_dst = cv2.imread(directory)
+#     # Four corners of the book in destination image.
+#     pts_dst = np.array([[318, 256],[534, 372],[316, 670],[73, 473]])
+ 
+#     # Calculate Homography
+#     h, status = cv2.findHomography(pts_src, pts_dst)
+ 
+#     # Warp source image to destination based on homography
+#     im_out = cv2.warpPerspective(im_src, h, (im_dst.shape[1],im_dst.shape[0]))
+ 
+#     # Display images
+#     # cv2.imshow("Source Image", im_src)
+#     plt_image = cv2.cvtColor(im_src, cv2.COLOR_BGR2RGB)
+#     # im_pil = Image.fromarray(plt_image)
+#     # im_pil.show()
+#     scale_percent = 30 # percent of original size
+#     width = int(im_dst.shape[1] * scale_percent / 100)
+#     height = int(im_dst.shape[0] * scale_percent / 100)
+#     dim = (width, height)
+    
+#     # resize image
+#     resized = cv2.resize(im_dst, dim, interpolation = cv2.INTER_AREA)
+    
+#     # cv2.imshow("Destination Image", resized)
+#     # cv2.imshow("Warped Source Image", im_out)
+#     img = np.zeros((512,512,3), np.uint8)
+#     cv2.namedWindow('image')
+#     cv2.setMouseCallback('image',draw_circle)
+#     while(1):
+#         cv2.imshow('image',resized)
+#         k = cv2.waitKey(20) & 0xFF
+#         if k == 27:
+#             break
+#         elif k == ord('a'):
+#             print mouseX,mouseY 
+
+#     pressedkey=cv2.waitKey(0)
+
+#      # Wait for ESC key to exit
+#     if pressedkey==27:
+#         cv2.destroyAllWindows()
+
