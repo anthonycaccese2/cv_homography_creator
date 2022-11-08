@@ -93,7 +93,7 @@ def add_point(eventAddPoint):
     global posList, win, resized_image
     x = eventAddPoint.x 
     y = eventAddPoint.y
-    if y >30:
+    if y >15:
         if(len(posList) < 4):
             print(x, y)
             cv2.circle(resized_image, (x,y), 10, (255, 255, 0), -1)
@@ -113,7 +113,7 @@ def generate_homography():
         canvas_size = np.zeros((src_img.shape[0], src_img.shape[1]))
         hm_image = computeHomography(src_img,canvas_size)
         hm_img = hm_image
-        cv2.imshow('Homography Computed', hm_image)
+        cv2.imshow('Homography Computed', hm_img)
     else:
         print("Not enought points")
 
@@ -149,16 +149,21 @@ def prev_image():
     l.config(text="Image: "+list2[image_counter])
 
 def save_homography(): # doesn't work
-    global hm_img, list2, image_counter
-    if hm_img.any() != None:
+    global hm_img, list2, image_counter, resized_image, img, posList
+    if hm_img.all() != None:
         print("Saving")
         cv2.imwrite("images\outputs\Homography_"+list2[image_counter],hm_img)
         # remove this image from list or mark as finished 
-        next_image()
+        # next_image()
         if len(list2) <= 1:
             print("end of list no more images")
         else:
-            list2.pop(image_counter-2)
+            list2.pop(image_counter)
+        posList = []
+        img = cv2.imread(path+'\\'+list2[image_counter])
+        resized_image = cv2.resize(img,(1008,756))
+        to_pil(img,label_1,0,30,1008,756)
+        l.config(text="Image: "+list2[image_counter])
     else: 
         print("Homography not generated")
 
@@ -177,7 +182,7 @@ homography_btn = Button(win, text="Generate Homography", command=generate_homogr
 homography_btn.pack(side="bottom", fill="none", expand="no", padx="10", pady="10")
 
 homography_btn = Button(win, text="Save", command=save_homography)
-homography_btn.place(x=10, y=10)
+homography_btn.place(x=10, y=4)
 
 win.bind("<Button 1>", add_point)
 
