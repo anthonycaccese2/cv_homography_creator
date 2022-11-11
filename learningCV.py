@@ -19,8 +19,9 @@ directory = path+'\\'+list2[0]
 posList = []
 img = cv2.imread(directory)
 resized_image = img
-hm_img = None # homography image
+hm_img = np.zeros((0,0)) # homography image
 image_counter = 0
+
 # Windows
 win = Tk()
 win.geometry("1008x786")
@@ -150,13 +151,23 @@ def prev_image():
 
 def save_homography(): # doesn't work
     global hm_img, list2, image_counter, resized_image, img, posList
-    if hm_img.all() != None:
+    print(hm_img.shape[0])
+    if hm_img.shape[0] == 0:
+        print("Homography not generated")
+        if len(posList) == 4:
+            generate_homography()
+        else: 
+            print("Not enough points")
+    else:
         print("Saving")
         cv2.imwrite("images\outputs\Homography_"+list2[image_counter],hm_img)
         # remove this image from list or mark as finished 
         # next_image()
         if len(list2) <= 1:
             print("end of list no more images")
+            # canvas_size = np.zeros((hm_img.shape[0], hm_img.shape[1]))
+            # mat = cv2.Mat((1008,756))
+            # to_pil(mat,label_1,0,30,1008,756)
         else:
             list2.pop(image_counter)
         posList = []
@@ -164,8 +175,7 @@ def save_homography(): # doesn't work
         resized_image = cv2.resize(img,(1008,756))
         to_pil(img,label_1,0,30,1008,756)
         l.config(text="Image: "+list2[image_counter])
-    else: 
-        print("Homography not generated")
+        hm_img = np.zeros((0,0)) #clear homography
 
 # Create label
 l = Label(win, text = "Image: "+list2[image_counter])
