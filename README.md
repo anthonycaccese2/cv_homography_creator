@@ -6,15 +6,15 @@ The script opens a window where the user can load a folder containing JPEG image
 
 To select points, the user clicks on the displayed image. The selected points are then used to compute the homography.
 
-The script uses the following libraries:
+##The script uses the following libraries:
 
-cv2
-numpy
-os
-subprocess
-matplotlib
-tkinter
-PIL
+* cv2
+* numpy
+* os
+* subprocess
+* matplotlib
+* tkinter
+* PIL
 
 To run the script, simply execute it in a Python environment.
 
