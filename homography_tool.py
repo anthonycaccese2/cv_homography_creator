@@ -34,3 +34,7 @@ class HomographyTool:
         cv2.imwrite(output_path, self.homography_image)
         self.homography_image = np.zeros((0, 0))
         self.points = []
+
+    def get_result_image(self):
+        """Return the warped image if homography has been computed."""
+        return self.homography_image  # or whatever attribute holds the warped result

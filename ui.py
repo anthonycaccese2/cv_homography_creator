@@ -86,13 +86,21 @@ class HomographyUI:
         self.update_display()
 
     def generate_homography(self):
-        """Compute the homography using selected points."""
+        """Compute and display the homography result."""
         try:
             src_img = self.image_manager.current_image()
             self.homography_tool.compute_homography(
                 src_img, self.scale_x, self.scale_y
             )
-            print("Homography generated.")
+            result = self.homography_tool.get_result_image()
+
+            if result is not None:
+                img_resized = cv2.resize(result, (self.canvas_width, self.canvas_height))
+                self.to_tk_image(img_resized)
+                self.label_text.config(text="Preview: Homography Generated")
+                print("Homography generated and previewed.")
+            else:
+                print("Homography generated but result image is None.")
         except Exception as error:
             print("Error generating homography:", error)
 
